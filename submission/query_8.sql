@@ -19,7 +19,7 @@ today AS (
         metric_value,
         DATE
     FROM aleemrahil84520.daily_web_metrics
-    WHERE DATE = DATE('2023-01-01')       -- Assuming '2023-01-01' is today's date
+    WHERE DATE = DATE('2023-01-01')       -- Assuming '2023-01-01' is today's date, (updated via query editor)
 )
 
 SELECT 
