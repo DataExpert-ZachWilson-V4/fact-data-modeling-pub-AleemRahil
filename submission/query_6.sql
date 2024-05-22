@@ -1,38 +1,35 @@
-INSERT INTO
-  aleemrahil84520.hosts_cumulated  -- Inserting data into the hosts_cumulated table
-WITH
+-- This query incrementally populates the hosts_cumulated table by merging new web event data with the existing cumulative data.
 
-  yesterday AS (
-    SELECT
-      *
-    FROM
-      aleemrahil84520.hosts_cumulated
-    WHERE
-      DATE = DATE('2022-12-31')  -- previous day
-  ),
+-- Step 1: Define a CTE (Common Table Expression) for yesterday's data
+-- The yesterday CTE retrieves the records from hosts_cumulated for the previous day.
+-- Step 2: Define a CTE for today's data
+-- The today CTE extracts the relevant data from the web_events table for today's date.
+-- Step 3: Insert the merged data into hosts_cumulated
+INSERT INTO aleemrahil84520.hosts_cumulated
+WITH yesterday AS (
+    SELECT *
+    FROM aleemrahil84520.hosts_cumulated
+    WHERE date = DATE('2022-12-31')  -- Assuming '2022-12-31' is the previous day
+),
 
-  today AS (
-    SELECT
-      host,                                    
-      CAST(date_trunc('day', event_time) AS DATE) AS event_date,  -- Truncating event_time to get the event_date
-      COUNT(1) AS activity_count              -- Adding count for creating the datelist 
-    FROM
-      bootcamp.web_events
-    WHERE
-      date_trunc('day', event_time) = DATE('2023-01-01')  -- current day
-    GROUP BY
-      host,
-       CAST(date_trunc('day', event_time) AS DATE)  
-  )
 
-SELECT
-  COALESCE(y.host, t.host) AS host,  -- Handling NULLs
-  CASE
-  -- If user was active yesterday, extend the array
-    WHEN y.host_activity_datelist IS NOT NULL THEN ARRAY[t.event_date] || y.host_activity_datelist
-    ELSE ARRAY[t.event_date]  
-  END AS host_activity_datelist,
-  DATE('2023-01-01') AS DATE  --Setting date to the get 'current day' across all records to simplify viewing
-FROM
-  yesterday y
-  FULL OUTER JOIN today t ON y.host = t.host
+today AS (
+    SELECT 
+        host,
+        DATE(date_trunc('day', event_time)) AS event_date  -- Extract the date from event_time
+    FROM bootcamp.web_events
+    WHERE DATE(date_trunc('day', event_time)) = DATE('2023-01-01')  -- Assuming '2023-01-01' is today's date
+    GROUP BY host, DATE(date_trunc('day', event_time))  -- Group by host and event_date
+)
+
+SELECT 
+    COALESCE(t.host, y.host) AS host,  -- Take the non-null host value from either yesterday or today
+    CASE
+        WHEN y.host_activity_datelist IS NULL THEN ARRAY[t.event_date]  -- If no previous data, create a new array with today's date
+        WHEN t.event_date IS NULL THEN y.host_activity_datelist  -- If no new data, keep the previous array
+        ELSE ARRAY[t.event_date] || y.host_activity_datelist  -- Append today's date to the previous array
+    END AS host_activity_datelist,
+    DATE('2023-01-01') AS date  -- Set the date for the new record
+FROM 
+    yesterday y
+    FULL OUTER JOIN today t ON y.host = t.host  -- Join yesterday's and today's data based on the host
