@@ -6,5 +6,5 @@ CREATE OR REPLACE TABLE aleemrahil84520.user_devices_cumulated (
   date DATE                      
 )
 WITH (
-  FORMAT = 'PARQUET',            
+  FORMAT = 'PARQUET'            
 )
