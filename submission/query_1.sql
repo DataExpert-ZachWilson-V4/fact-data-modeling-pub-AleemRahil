@@ -2,7 +2,7 @@ WITH NBA_FACTS AS (
   -- Making an index on game_id, team_id, and player_id
   SELECT *,
          ROW_NUMBER() OVER (PARTITION BY game_id, team_id, player_id ORDER BY dim_game_date) AS row_num
-  FROM pratzo.fct_nba_game_details
+  FROM aleemrahil84520.fct_nba_game_details
 )
 SELECT 
   game_id,
